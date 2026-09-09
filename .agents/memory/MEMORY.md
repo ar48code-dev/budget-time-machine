@@ -1,0 +1,4 @@
+- [Gemini workspace runtime](gemini-workspace-runtime.md) — consuming server bundles need a direct @google/genai dependency when esbuild externalizes it.
+- [GitHub connector uploads](github-connector-write-limits.md) — large Git Data API source uploads can trigger Replit/Cloudflare edge blocks; verify connector limits before relying on automated repo sync.
+- [Room collaboration boundary](room-collaboration-boundary.md) — anonymous rooms stay unlisted until explicit claim; claimed rooms require server-side session and membership checks.
+- [Live browser capture routing](live-browser-capture-routing.md) — record through the Replit preview domain so routed /api calls reach the API artifact; direct Vite localhost does not proxy them.

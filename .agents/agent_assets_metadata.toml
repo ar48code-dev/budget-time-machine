@@ -1,0 +1,44 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "nUGrRt4uQoyU4tEFG8OjQ"
+uri = "file://deliverables/the-line-budget-time-machine-source.zip"
+type = "unspecified"
+title = "The Line — Budget Time-Machine latest source"
+description = "Latest verified source archive for pushing to your GitHub repository. Includes the fixed cross-browser isolation, named team rooms, room/auth OpenAPI contract, generated clients and schemas, smoke tests, deployment configuration, and README. ZIP integrity verified; no credentials included."
+logical_id = "2f15b756-cad4-47a2-b0a2-75c646a72ef6"
+content_hash = "sha256:d890be2e030de900d9a84f1571d7330e62bba28dc45e55d8817c52d7cd584469"
+size = 307885
+mtime_ms = 1788800272269
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:589102bf-49e4-434b-8e51-5ddc9ec17340/2f15b756-cad4-47a2-b0a2-75c646a72ef6/e3c552e5-e77e-480e-9d73-4db56f69b121"
+storage_version_token = "1788951716692902"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "YzgAzsZ3ln-6Cb31qtKhO"
+uri = "file://deliverables/the-line-hackathon-video-storyboard.txt"
+type = "text"
+title = "The Line — hackathon video storyboard"
+description = "Project-specific 2–3 minute YouTube submission script with real UI labels, Coldwater Creek demo steps, agent stages, confirmation gate, decision log, export pack, captions, and verification requirements."
+logical_id = "d9caddd6-74f4-4e98-b105-787965710a9b"
+content_hash = "sha256:3212a04d4caa053d089fb42ba720ef5cdc6c1a57ca6a8577396b68e90d9cc7ed"
+size = 11235
+mtime_ms = 1788960377161
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:589102bf-49e4-434b-8e51-5ddc9ec17340/d9caddd6-74f4-4e98-b105-787965710a9b/49db2b3e-52af-4a70-947b-4eeb55692f1b"
+storage_version_token = "1788960434333206"
+content_type = "text/plain"
+
+[[outputs]]
+id = "a3oMhmzF8f4i7Y0ksFWxL"
+uri = "file://deliverables/the-line-hackathon-demo.mp4"
+type = "video"
+title = "The Line — hackathon demo video"
+description = "Verified 2-minute-36-second YouTube-ready demo recorded from the live Replit preview. Shows the real Coldwater Creek workflow: sample load, production graph, what-if simulation, cascade and deterministic financial impact, confirmation gate, applied plan, decision trace, and export pack. 1920×1080 H.264 MP4 with AAC audio and burned-in captions."
+logical_id = "66d403ce-780b-450f-9415-02e244df8ae8"
+content_hash = "sha256:947b8508638139ac863f7db70bd98263710282570dd277802dc1f19f4196c6ca"
+size = 4784170
+mtime_ms = 1788963274951
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:589102bf-49e4-434b-8e51-5ddc9ec17340/66d403ce-780b-450f-9415-02e244df8ae8/7fe5d0df-8ed9-47d1-a6ec-4abd7c9be3ed"
+storage_version_token = "1788963329540755"
+content_type = "video/mp4"

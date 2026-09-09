@@ -1,0 +1,884 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: Budget Time-Machine production planning API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: production
+    description: Production graph and agent workflows
+  - name: scenarios
+    description: Saved what-if scenarios
+  - name: auth
+    description: Producer account and session operations
+  - name: rooms
+    description: Persistent production rooms and collaboration
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /sample:
+    get:
+      operationId: loadSampleProduction
+      tags: [production]
+      summary: Load the demo production
+      responses:
+        "200":
+          description: Sample production graph
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductionResponse"
+  /graph:
+    get:
+      operationId: getProductionGraph
+      tags: [production]
+      summary: Get the active production graph
+      responses:
+        "200":
+          description: Active production graph
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductionGraph"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /ingest:
+    post:
+      operationId: ingestProductionText
+      tags: [production]
+      summary: Parse a schedule and budget document with Gemini
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IngestInput"
+      responses:
+        "200":
+          description: Parsed production graph
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductionResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /simulate:
+    post:
+      operationId: simulateChange
+      tags: [production]
+      summary: Run the Simulation and Impact agents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SimulationInput"
+      responses:
+        "200":
+          description: Staged what-if impact
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SimulationResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /apply:
+    post:
+      operationId: applyChange
+      tags: [production]
+      summary: Apply a confirmed change through the Plan agent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApplyInput"
+      responses:
+        "200":
+          description: Applied plan and updated graph
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApplyResult"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /advisor:
+    get:
+      operationId: getAdvisorRecommendations
+      tags: [production]
+      summary: Get highest-leverage schedule interventions
+      responses:
+        "200":
+          description: Ranked interventions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdvisorResult"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /decision-log:
+    get:
+      operationId: getDecisionLog
+      tags: [production]
+      summary: Get the agent governance trail
+      responses:
+        "200":
+          description: Chronological agent decisions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DecisionLogEntry"
+  /auth/me:
+    get:
+      operationId: getCurrentProducer
+      tags: [auth]
+      summary: Get the signed-in producer, if any
+      responses:
+        "200":
+          description: Current producer or anonymous session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthMeResponse"
+  /auth/signup:
+    post:
+      operationId: signupProducer
+      tags: [auth]
+      summary: Create a producer account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProducerSignupInput"
+      responses:
+        "201":
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /auth/signin:
+    post:
+      operationId: signinProducer
+      tags: [auth]
+      summary: Sign in a producer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProducerCredentialsInput"
+      responses:
+        "200":
+          description: Signed-in producer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /auth/signout:
+    post:
+      operationId: signoutProducer
+      tags: [auth]
+      summary: End the current producer session
+      responses:
+        "204":
+          description: Signed out
+  /room-context:
+    get:
+      operationId: getRoomContext
+      tags: [rooms]
+      summary: Resolve the current browser room and access context
+      responses:
+        "200":
+          description: Room and optional signed-in producer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoomContextResponse"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /rooms:
+    get:
+      operationId: listProductionRooms
+      tags: [rooms]
+      summary: List rooms owned by or shared with the producer
+      responses:
+        "200":
+          description: Accessible production rooms
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListRoomsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: createProductionRoom
+      tags: [rooms]
+      summary: Create a named team production room
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRoomInput"
+      responses:
+        "201":
+          description: Created production room
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoomResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /rooms/{roomId}/claim:
+    post:
+      operationId: claimProductionRoom
+      tags: [rooms]
+      summary: Claim the current anonymous browser room
+      parameters:
+        - $ref: "#/components/parameters/RoomId"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClaimRoomInput"
+      responses:
+        "200":
+          description: Claimed production room
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoomResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /rooms/{roomId}/invites:
+    post:
+      operationId: createRoomInvite
+      tags: [rooms]
+      summary: Create an email-bound room invite
+      parameters:
+        - $ref: "#/components/parameters/RoomId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoomInviteInput"
+      responses:
+        "201":
+          description: One-time invite token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoomInviteResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /room-invites/{token}/accept:
+    post:
+      operationId: acceptRoomInvite
+      tags: [rooms]
+      summary: Accept a room invite for the signed-in producer
+      parameters:
+        - $ref: "#/components/parameters/InviteToken"
+      responses:
+        "200":
+          description: Joined room
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcceptInviteResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /rooms/{roomId}/members:
+    get:
+      operationId: listRoomMembers
+      tags: [rooms]
+      summary: List collaborators in a production room
+      parameters:
+        - $ref: "#/components/parameters/RoomId"
+      responses:
+        "200":
+          description: Room members
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListMembersResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /scenarios:
+    get:
+      operationId: listScenarios
+      tags: [scenarios]
+      summary: List saved scenarios
+      responses:
+        "200":
+          description: Scenario metadata
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ScenarioSummary"
+    post:
+      operationId: saveScenario
+      tags: [scenarios]
+      summary: Save the current graph as a named scenario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScenarioInput"
+      responses:
+        "201":
+          description: Saved scenario
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Scenario"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /scenarios/{id}/load:
+    post:
+      operationId: loadScenario
+      tags: [scenarios]
+      summary: Load a saved scenario into the active timeline
+      parameters:
+        - $ref: "#/components/parameters/ScenarioId"
+      responses:
+        "200":
+          description: Loaded graph
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductionGraph"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /scenarios/{id}:
+    delete:
+      operationId: deleteScenario
+      tags: [scenarios]
+      summary: Delete a saved scenario
+      parameters:
+        - $ref: "#/components/parameters/ScenarioId"
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteResult"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /scenarios/compare:
+    get:
+      operationId: compareScenarios
+      tags: [scenarios]
+      summary: Compare two saved scenarios with Gemini
+      parameters:
+        - name: a
+          in: query
+          required: true
+          schema: { type: string }
+        - name: b
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Numeric diff and narrative comparison
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ComparisonResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  parameters:
+    ScenarioId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+    RoomId:
+      name: roomId
+      in: path
+      required: true
+      schema: { type: string, pattern: "^[a-zA-Z0-9_-]{8,64}$" }
+    InviteToken:
+      name: token
+      in: path
+      required: true
+      schema: { type: string, minLength: 16 }
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Conflict:
+      description: Resource conflict
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Forbidden:
+      description: Confirmation required
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ServerError:
+      description: Server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status: { type: string }
+        geminiConfigured: { type: boolean }
+      required: [status, geminiConfigured]
+    ProducerUser:
+      type: object
+      properties:
+        userId: { type: string }
+        email: { type: string, format: email }
+        displayName: { type: string }
+      required: [userId, email, displayName]
+    AuthMeResponse:
+      type: object
+      properties:
+        user:
+          oneOf:
+            - $ref: "#/components/schemas/ProducerUser"
+            - type: "null"
+      required: [user]
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/ProducerUser"
+      required: [user]
+    ProducerCredentialsInput:
+      type: object
+      properties:
+        email: { type: string, format: email, maxLength: 255 }
+        password: { type: string, minLength: 8, maxLength: 200 }
+      required: [email, password]
+    ProducerSignupInput:
+      allOf:
+        - $ref: "#/components/schemas/ProducerCredentialsInput"
+        - type: object
+          properties:
+            displayName: { type: string, minLength: 1, maxLength: 80 }
+          required: [displayName]
+    Room:
+      type: object
+      properties:
+        roomId: { type: string }
+        name: { type: string }
+        role: { type: string, enum: [owner, editor, viewer, anonymous] }
+        visibility: { type: string, enum: [private, team] }
+        anonymous: { type: boolean }
+        hasProduction: { type: boolean }
+        updatedAt: { type: string, format: date-time }
+      required: [roomId, name, role, visibility]
+    RoomContextResponse:
+      type: object
+      properties:
+        room:
+          $ref: "#/components/schemas/Room"
+        user:
+          oneOf:
+            - $ref: "#/components/schemas/ProducerUser"
+            - type: "null"
+      required: [room, user]
+    ListRoomsResponse:
+      type: object
+      properties:
+        rooms:
+          type: array
+          items:
+            $ref: "#/components/schemas/Room"
+      required: [rooms]
+    RoomResponse:
+      type: object
+      properties:
+        room:
+          $ref: "#/components/schemas/Room"
+      required: [room]
+    CreateRoomInput:
+      type: object
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+      required: [name]
+    ClaimRoomInput:
+      type: object
+      properties:
+        name: { type: ["string", "null"], maxLength: 120 }
+    RoomInviteInput:
+      type: object
+      properties:
+        email: { type: string, format: email, maxLength: 255 }
+        role: { type: string, enum: [editor, viewer] }
+      required: [email]
+    RoomInviteResponse:
+      type: object
+      properties:
+        token: { type: string }
+        expiresInDays: { type: number }
+      required: [token, expiresInDays]
+    AcceptInviteResponse:
+      type: object
+      properties:
+        roomId: { type: string }
+      required: [roomId]
+    RoomMember:
+      type: object
+      properties:
+        userId: { type: string }
+        email: { type: string, format: email }
+        displayName: { type: string }
+        role: { type: string, enum: [owner, editor, viewer] }
+      required: [userId, email, displayName, role]
+    ListMembersResponse:
+      type: object
+      properties:
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/RoomMember"
+      required: [members]
+    ErrorResponse:
+      type: object
+      properties:
+        error: { type: string }
+      required: [error]
+    BudgetSummary:
+      type: object
+      properties:
+        totalBudget: { type: ["number", "null"] }
+        spentToDate: { type: ["number", "null"] }
+        remaining: { type: ["number", "null"] }
+        contingencyPct: { type: ["number", "null"] }
+        currency: { type: string }
+      required: [totalBudget, spentToDate, remaining, contingencyPct, currency]
+    ShootDay:
+      type: object
+      properties:
+        id: { type: string }
+        date: { type: ["string", "null"] }
+        type: { type: string, enum: [day, night] }
+        scenes:
+          type: array
+          items: { type: string }
+        location: { type: string }
+        cast:
+          type: array
+          items: { type: string }
+        crewSize: { type: number }
+        baseCost: { type: number }
+        callTime: { type: ["string", "null"] }
+        wrapTime: { type: ["string", "null"] }
+        dependencies:
+          type: array
+          items: { type: string }
+      required: [id, date, type, scenes, location, cast, crewSize, baseCost, callTime, wrapTime, dependencies]
+    ProductionGraph:
+      type: object
+      properties:
+        productionName: { type: string }
+        days:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShootDay"
+        budgetSummary:
+          $ref: "#/components/schemas/BudgetSummary"
+      required: [productionName, days, budgetSummary]
+    ProductionResponse:
+      type: object
+      properties:
+        productionName: { type: string }
+        graph:
+          $ref: "#/components/schemas/ProductionGraph"
+      required: [productionName, graph]
+    IngestInput:
+      type: object
+      properties:
+        text:
+          type: ["string", "null"]
+          maxLength: 200000
+        filename:
+          type: ["string", "null"]
+          maxLength: 255
+        mimeType:
+          type: ["string", "null"]
+          maxLength: 100
+          description: MIME type for a PDF or image supplied as inline data
+        fileData:
+          type: ["string", "null"]
+          maxLength: 12582912
+          description: Base64-encoded raw PDF or image bytes
+    ChangeDetails:
+      type: object
+      properties:
+        sceneToCut: { type: ["string", "null"] }
+        castMemberToCut: { type: ["string", "null"] }
+        newDate: { type: ["string", "null"] }
+    SimulationInput:
+      type: object
+      properties:
+        dayId: { type: string }
+        changeType:
+          type: string
+          enum: [cut_scene, cut_cast_day, cut_location, convert_to_day_for_night, move_day]
+        details:
+          $ref: "#/components/schemas/ChangeDetails"
+      required: [dayId, changeType]
+    Change:
+      type: object
+      properties:
+        changeId: { type: string }
+        dayId: { type: string }
+        changeType: { type: string }
+        details:
+          $ref: "#/components/schemas/ChangeDetails"
+      required: [changeId, dayId, changeType, details]
+    CascadeItem:
+      type: object
+      properties:
+        dayId: { type: string }
+        reason: { type: string }
+        severity: { type: string, enum: [low, medium, high] }
+      required: [dayId, reason, severity]
+    CascadeResult:
+      type: object
+      properties:
+        affectedDays:
+          type: array
+          items:
+            $ref: "#/components/schemas/CascadeItem"
+        summary: { type: string }
+      required: [affectedDays, summary]
+    AppliedRule:
+      type: object
+      properties:
+        rule: { type: string }
+        justification: { type: string }
+        estimatedHoursOver: { type: ["number", "null"] }
+        estimatedHoursBetweenShoots: { type: ["number", "null"] }
+      required: [rule, justification, estimatedHoursOver, estimatedHoursBetweenShoots]
+    ImpactBreakdown:
+      type: object
+      properties:
+        label: { type: string }
+        amount: { type: number }
+      required: [label, amount]
+    ImpactResult:
+      type: object
+      properties:
+        appliedRules:
+          type: array
+          items:
+            $ref: "#/components/schemas/AppliedRule"
+        costDelta: { type: number }
+        daysDelta: { type: number }
+        riskFlags:
+          type: array
+          items: { type: string }
+        breakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImpactBreakdown"
+        projectedRemaining: { type: number }
+        overBudget: { type: boolean }
+      required: [appliedRules, costDelta, daysDelta, riskFlags, breakdown, projectedRemaining, overBudget]
+    SimulationResult:
+      type: object
+      properties:
+        changeId: { type: string }
+        change:
+          $ref: "#/components/schemas/Change"
+        cascade:
+          $ref: "#/components/schemas/CascadeResult"
+        impact:
+          $ref: "#/components/schemas/ImpactResult"
+      required: [changeId, change, cascade, impact]
+    ApplyInput:
+      type: object
+      properties:
+        changeId: { type: string }
+        confirmed: { type: boolean }
+      required: [changeId, confirmed]
+    PurchaseOrderDelta:
+      type: object
+      properties:
+        vendor: { type: string }
+        description: { type: string }
+        amountDelta: { type: number }
+      required: [vendor, description, amountDelta]
+    ApplyResult:
+      type: object
+      properties:
+        graph:
+          $ref: "#/components/schemas/ProductionGraph"
+        revisedScheduleSummary: { type: string }
+        purchaseOrderDeltas:
+          type: array
+          items:
+            $ref: "#/components/schemas/PurchaseOrderDelta"
+        producerMemo: { type: string }
+      required: [graph, revisedScheduleSummary, purchaseOrderDeltas, producerMemo]
+    AdvisorRecommendation:
+      type: object
+      properties:
+        rank: { type: number }
+        title: { type: string }
+        action: { type: string }
+        dayId: { type: string }
+        estimatedSavings: { type: number }
+        creativeRisk: { type: string, enum: [low, medium, high] }
+        rationale: { type: string }
+      required: [rank, title, action, dayId, estimatedSavings, creativeRisk, rationale]
+    AdvisorResult:
+      type: object
+      properties:
+        headline: { type: string }
+        recommendations:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdvisorRecommendation"
+      required: [headline, recommendations]
+    DecisionLogEntry:
+      type: object
+      properties:
+        id: { type: string }
+        agent: { type: string }
+        input: { type: object, additionalProperties: true }
+        output: { type: object, additionalProperties: true }
+        timestamp: { type: string }
+      required: [id, agent, input, output, timestamp]
+    ScenarioInput:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+      required: [name]
+    ScenarioSummary:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        createdAt: { type: string }
+        dayCount: { type: number }
+        remaining: { type: ["number", "null"] }
+      required: [id, name, createdAt, dayCount, remaining]
+    Scenario:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        createdAt: { type: string }
+        graph:
+          $ref: "#/components/schemas/ProductionGraph"
+      required: [id, name, createdAt, graph]
+    DeleteResult:
+      type: object
+      properties:
+        deleted: { type: boolean }
+      required: [deleted]
+    ComparisonDiff:
+      type: object
+      properties:
+        scenarioAName: { type: string }
+        scenarioBName: { type: string }
+        dayCountA: { type: number }
+        dayCountB: { type: number }
+        dayCountDelta: { type: number }
+        totalScheduledCostA: { type: number }
+        totalScheduledCostB: { type: number }
+        costDelta: { type: number }
+        remainingA: { type: ["number", "null"] }
+        remainingB: { type: ["number", "null"] }
+        remainingDelta: { type: number }
+      required: [scenarioAName, scenarioBName, dayCountA, dayCountB, dayCountDelta, totalScheduledCostA, totalScheduledCostB, costDelta, remainingA, remainingB, remainingDelta]
+    ComparisonResult:
+      type: object
+      properties:
+        diff:
+          $ref: "#/components/schemas/ComparisonDiff"
+        summary: { type: string }
+      required: [diff, summary]

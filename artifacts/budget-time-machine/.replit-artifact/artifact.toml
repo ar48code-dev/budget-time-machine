@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "The Line — Budget Time-Machine"
+description = "The Line is an agent-powered production control room for independent filmmakers. Ingest real schedules and budgets, model cascading consequences with Vertex AI, compare scenarios, and apply a governed plan with an auditable producer memo."
+version = "1.0.0"
+id = "artifacts/budget-time-machine"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18779
+
+[services.development]
+run = "pnpm --filter @workspace/budget-time-machine run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/budget-time-machine", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/budget-time-machine/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18779"
+BASE_PATH = "/"
